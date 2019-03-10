@@ -85,6 +85,7 @@ sub close_pending_test {
                 );
             }
         }
+        $test_output =~ s/^\s+//gm;
 
         builder->test_failed(
             $pending_test->{name},

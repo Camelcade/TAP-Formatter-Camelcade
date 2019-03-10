@@ -6,10 +6,13 @@ use Cwd;
 use v5.10;
 use Time::HiRes qw/time/;
 
+my $OVERWRITE_RESULTS = 0;
+
 my @tests = map {s{^testData/tests/(.+?).t$}{$1};
     $_} glob('testData/tests/*.t');
 
 plan tests => scalar @tests;
+
 
 $ENV{TAP_FORMATTER_CAMELCADE_TIME} = '1552222609.97356';
 $ENV{TAP_FORMATTER_CAMELCADE_DURATION} = 42;
@@ -19,7 +22,7 @@ foreach my $test (@tests) {
     $result =~ s/(^\s+|\r|\s+$)//gsi;
     $result =~ s/^##teamcity/teamcity/gm;
     my $result_file = "testData/results/$test.txt";
-    if (-f $result_file) {
+    if (!$OVERWRITE_RESULTS && -f $result_file) {
         open my $if, $result_file || die("Error creating output file: $result_file, $!");
         my $expected = join '', <$if>;
         close $if;
