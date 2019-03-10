@@ -5,7 +5,7 @@ use Time::HiRes qw( time );
 
 # taken from TeamCity::Message
 sub tc_timestamp {
-    my $now = time;
+    my $now = $ENV{TAP_FORMATTER_CAMELCADE_TIME} // time;
     my ( $s, $mi, $h, $d, $mo, $y ) = ( gmtime($now) )[ 0 .. 5 ];
 
     my $float = ( $now - int($now) );
@@ -88,12 +88,11 @@ sub output {
     $self->message($text, 'NORMAL')->print;
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub stderr {
     my $self = shift;
     my $test_name = shift;
     my $text = shift;
-    return $self->new('testStdErr', out => "$text\n", name => $test_name);
+    $self->new('testStdErr', out => "$text\n", name => $test_name)->print;
 }
 
 #@returns TAP::Formatter::Camelcade::MessageBuilder

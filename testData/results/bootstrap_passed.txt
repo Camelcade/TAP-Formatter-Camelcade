@@ -1,0 +1,10 @@
+teamcity[enteredTheMatrix timestamp='2019-03-10T12:56:49.973']
+teamcity[testingStarted timestamp='2019-03-10T12:56:49.973']
+teamcity[testSuiteStarted locationHint='myfile://testData/tests/bootstrap_passed.t' name='testData/tests/bootstrap_passed.t' timestamp='2019-03-10T12:56:49.973']
+teamcity[testStarted name='Bootstrap' timestamp='2019-03-10T12:56:49.973']
+teamcity[testFinished duration='42' name='Bootstrap' timestamp='2019-03-10T12:56:49.973']
+teamcity[testSuiteFinished locationHint='testData/tests/bootstrap_passed.t' name='testData/tests/bootstrap_passed.t' timestamp='2019-03-10T12:56:49.973']
+All tests successful.
+Files=1, Tests=1, TEST_MODE_STATS;
+Result: PASS
+teamcity[testingFinished timestamp='2019-03-10T12:56:49.973']

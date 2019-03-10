@@ -57,21 +57,61 @@ We are keeping last test failure to append comments into it
 
 =cut
 
-sub finish_last_test {
+sub close_pending_test {
     my $self = shift;
-    my $last_test = $self->get_last_test;
-    if (defined $last_test) {
-        $self->set_last_time;
-        builder->test_finished(@$last_test{qw/name duration/})->print;
-    }
+    my $pending_test = $self->get_pending_test;
     $self->{last_test} = undef;
+    if (!defined $pending_test) {
+        return;
+    }
+    $self->set_last_time;
+    my $test_output = join "\n", @{$pending_test->{output}};
+    if( $pending_test->{is_ok}){
+        if( length $test_output > 0 && $test_output ne "\n"){
+            builder->stderr($pending_test->{name}, $test_output);
+        }
+    }
+    else {
+        my @extra = ();
+        if ($test_output) {
+            my $normalized_output = $test_output;
+            $normalized_output =~ s{^\s*# }{}gmi;
+            #            use v5.10; say STDERR "Normalized as $normalized_output";
+            if ($normalized_output =~ m{         got: '(.*?)'\n    expected: '(.*)'}s) {
+                @extra = (
+                    type     => 'comparisonFailure',
+                    actual   => $1,
+                    expected => $2
+                );
+            }
+        }
+
+        builder->test_failed(
+            $pending_test->{name},
+            $pending_test->{explanation} // "",
+            details => $test_output,
+            @extra
+        )->print;
+    }
+    builder->test_finished(@$pending_test{qw/name duration/})->print;
 }
 
-sub set_last_test {
-    my ($self, $test_name, $test_duration) = @_;
+sub start_test {
+    my $self = shift;
+    #@type TAP::Parser::Result::Test
+    my $test = shift;
+
+    my $last_time = $self->get_last_time;
+    my $test_name = $self->_compute_test_name($test);
+    my $test_duration = int((time - $last_time) * 1000);
+    $self->close_pending_test;
+    builder->test_started($test_name)->print;
     $self->{last_test} = {
-        name     => $test_name,
-        duration => $test_duration
+        name        => $test_name,
+        duration    => $ENV{TAP_FORMATTER_CAMELCADE_DURATION} // $test_duration,
+        is_ok       => $test->is_ok,
+        output      => [],
+        explanation => $test->explanation
     };
 }
 
@@ -85,7 +125,7 @@ sub get_last_time{
     return $self->{last_time} // time;
 }
 
-sub get_last_test {
+sub get_pending_test {
     my $self = shift;
     return $self->{last_test};
 }
@@ -106,7 +146,7 @@ sub handle_plan{
     my $self = shift;
     #@type TAP::Parser::Result::Plan
     my $result = shift;
-    $self->finish_last_test;
+    $self->close_pending_test;
 
     if ($result->directive eq 'SKIP') {
         builder->output($result->explanation);
@@ -131,19 +171,12 @@ sub handle_test{
     #@type TAP::Parser::Result::Test
     my $result = shift;
 
-    my $last_time = $self->get_last_time;
-
     my $test_name = $self->_compute_test_name($result);
     if ($self->is_subtest($test_name)) {
         $self->finish_subtest;
     }
     else {
-        $self->finish_last_test;
-        builder->test_started($test_name)->print;
-        $self->set_last_test($test_name, int((time - $last_time)*1000));
-        if (!$result->is_ok) {
-            builder->test_failed($test_name, $result->explanation)->print;
-        }
+        $self->start_test($result);
     }
 }
 
@@ -158,9 +191,9 @@ sub handle_comment{
         $self->start_subtest($1);
     }
     else {
-        my $last_test = $self->get_last_test;
+        my $last_test = $self->get_pending_test;
         if ($last_test) {
-            builder->stderr($last_test->{name}, $comment)->print;
+            push @{$last_test->{output}}, $comment;
         }
         else {
             builder->warning($comment);
@@ -237,7 +270,7 @@ sub handle_yaml{
 
 sub close_test {
     my $self = shift;
-    $self->finish_last_test;
+    $self->close_pending_test;
     builder->test_suite_finished($self->name)->print;
 }
 
@@ -260,7 +293,7 @@ sub _initialize {
 sub start_subtest {
     my $self = shift;
     my $subtest_name = shift;
-    $self->finish_last_test;
+    $self->close_pending_test;
     push @{$self->{subtests}}, $subtest_name;
     builder->test_suite_started($subtest_name)->print;
 }
@@ -281,7 +314,7 @@ sub finish_subtest {
     my $self = shift;
     my $subtest_name = pop @{$self->{subtests}};
     return unless $subtest_name;
-    $self->finish_last_test;
+    $self->close_pending_test;
     builder->test_suite_finished($subtest_name)->print;
 }
 
