@@ -4,6 +4,7 @@ use warnings FATAL => 'all';
 use base 'TAP::Formatter::Session';
 use TAP::Formatter::Camelcade::MessageBuilder;
 use Time::HiRes qw/time/;
+use Digest::MD5 qw/md5_hex/;
 
 #@returns TAP::Formatter::Camelcade::MessageBuilder
 sub builder {
@@ -68,7 +69,12 @@ sub close_pending_test {
     my $test_output = join "\n", @{$pending_test->{output}};
     if( $pending_test->{is_ok}){
         if( length $test_output > 0 && $test_output ne "\n"){
-            builder->stderr($pending_test->{name}, $test_output);
+            builder->stderr(
+                $pending_test->{name},
+                $test_output,
+                $pending_test->{nodeId},
+                $pending_test->{parentNodeId},
+            );
         }
     }
     else {
@@ -90,11 +96,13 @@ sub close_pending_test {
         builder->test_failed(
             $pending_test->{name},
             $pending_test->{explanation} // "",
+            $pending_test->{nodeId},
+            $pending_test->{parentNodeId},
             details => $test_output,
             @extra
-        )->print;
+        );
     }
-    builder->test_finished(@$pending_test{qw/name duration/})->print;
+    builder->test_finished(@$pending_test{qw/name duration nodeId parentNodeId/});
 }
 
 sub start_test {
@@ -106,14 +114,16 @@ sub start_test {
     my $test_name = $self->_compute_test_name($test);
     my $test_duration = int((time - $last_time) * 1000);
     $self->close_pending_test;
-    builder->test_started($test_name)->print;
     $self->{last_test} = {
-        name        => $test_name,
-        duration    => $ENV{TAP_FORMATTER_CAMELCADE_DURATION} // $test_duration,
-        is_ok       => $test->is_ok,
-        output      => [],
-        explanation => $test->explanation
+        name         => $test_name,
+        duration     => $ENV{TAP_FORMATTER_CAMELCADE_DURATION} // $test_duration,
+        is_ok        => $test->is_ok,
+        output       => [],
+        explanation  => $test->explanation,
+        nodeId       => $self->generate_test_id($test_name),
+        parentNodeId => $self->get_parent_node_id
     };
+    builder->test_started(@{$self->{last_test}}{qw/name nodeId parentNodeId/});
 }
 
 sub set_last_time {
@@ -282,7 +292,8 @@ sub _initialize {
 
     $self->SUPER::_initialize($arg_for);
     $self->{subtests} = [];
-    $self->{suits} = [];
+    $self->{suites} = [];
+    $self->{counter} = 0;
     # $arg_for has parser, name, formatter
     $self->start_suite($self->name, $self->{location});
     $self->set_last_time;
@@ -294,11 +305,42 @@ sub start_suite{
     my $name = shift;
     my $location = shift;
     my $suite = {
-        name     => $name,
-        location => $location || $name
+        name         => $name,
+        nodeId       => $self->generate_suite_id($name, $location),
+        parentNodeId => $self->get_parent_node_id(),
+        location     => $location || $name
     };
     push @{$self->{suites}}, $suite;
-    builder->test_suite_started(@$suite{qw/name location/})->print;
+    builder->test_suite_started(@$suite{qw/name location nodeId parentNodeId/});
+}
+
+sub generate_suite_id {
+    my $self = shift;
+    my $name = shift;
+    my $location = shift;
+    my $new_id = join '-', $location || $name, $ENV{TAP_FORMATTER_CAMELCADE_DURATION} ? (): ($$, time), $self->{counter}++;
+    return $ENV{TAP_FORMATTER_CAMELCADE_DURATION} ? $new_id: md5_hex($new_id);
+}
+
+sub generate_test_id {
+    my $self = shift;
+    my $name = shift;
+    my $new_id = join '-', $self->get_parent_node_id, $name, $self->{counter}++;
+    return $ENV{TAP_FORMATTER_CAMELCADE_DURATION} ? $new_id: md5_hex($new_id);
+}
+
+sub get_current_suite {
+    my $self = shift;
+    if (scalar @{$self->{suites}} == 0) {
+        return undef;
+    }
+    return $self->{suites}->[$#{$self->{suites}}];
+}
+
+sub get_parent_node_id {
+    my $self = shift;
+    my $current_suite = $self->get_current_suite;
+    return defined $current_suite ? $current_suite->{nodeId} : 0;
 }
 
 sub finish_suite{
@@ -307,7 +349,7 @@ sub finish_suite{
 
     my $current_suite = pop @{$self->{suites}};
     return unless $current_suite;
-    builder->test_suite_finished($current_suite->{name})->print;
+    builder->test_suite_finished(@$current_suite{qw/name nodeId parentNodeId/});
 }
 
 sub start_subtest {

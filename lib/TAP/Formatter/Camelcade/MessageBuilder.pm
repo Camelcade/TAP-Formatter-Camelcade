@@ -92,7 +92,14 @@ sub stderr {
     my $self = shift;
     my $test_name = shift;
     my $text = shift;
-    $self->new('testStdErr', out => "$text\n", name => $test_name)->print;
+    my $node_id = shift;
+    my $parent_node_id = shift;
+    $self->new('testStdErr',
+        out          => "$text\n",
+        name         => $test_name,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id
+    )->print;
 }
 
 #@returns TAP::Formatter::Camelcade::MessageBuilder
@@ -115,25 +122,32 @@ sub suite_tree_started {
     );
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub test_suite_started {
     my $self = shift;
     my $name = shift;
     my $location_hint = shift || $name;
-    return $self->new('testSuiteStarted',
+    my $node_id = shift;
+    my $parent_node_id = shift;
+    $self->new('testSuiteStarted',
         name         => $name,
-        locationHint => $location_hint
-    );
+        locationHint => $location_hint,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id
+    )->print;
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub test_suite_finished {
     my $self = shift;
     my $name = shift;
-    return $self->new('testSuiteFinished',
+    my $node_id = shift;
+    my $parent_node_id = shift;
+
+    $self->new('testSuiteFinished',
         name         => $name,
-        locationHint => $name
-    );
+        locationHint => $name,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id
+    )->print;
 }
 
 #@returns TAP::Formatter::Camelcade::MessageBuilder
@@ -177,27 +191,45 @@ sub test_custom {
     return $self->new('customProgressStatus', type => $type, @_);
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub test_started {
     my $self = shift;
     my $name = shift;
-    return $self->new('testStarted', name => $name, @_);
+    my $node_id = shift;
+    my $parent_node_id = shift;
+    $self->new('testStarted',
+        name         => $name,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id
+    )->print;
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub test_failed {
     my $self = shift;
     my $name = shift;
     my $message = shift;
-    return $self->new('testFailed', name => $name, message => $message, @_);
+    my $node_id = shift;
+    my $parent_node_id = shift;
+    $self->new('testFailed',
+        name         => $name,
+        message      => $message,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id,
+        @_
+    )->print;
 }
 
-#@returns TAP::Formatter::Camelcade::MessageBuilder
 sub test_finished {
     my $self = shift;
     my $name = shift;
     my $duration = shift // 0;
-    return $self->new('testFinished', name => $name, duration => $duration, @_);
+    my $node_id = shift;
+    my $parent_node_id = shift;
+    return $self->new('testFinished',
+        name         => $name,
+        duration     => $duration,
+        nodeId       => $node_id,
+        parentNodeId => $parent_node_id
+    )->print;
 }
 
 sub escape {
