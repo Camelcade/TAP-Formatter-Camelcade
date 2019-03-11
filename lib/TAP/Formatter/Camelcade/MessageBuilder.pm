@@ -201,7 +201,7 @@ sub test_finished {
 }
 
 sub escape {
-    my $text = shift;
+    my $text = shift // "";
     if (ref $text) {
         $text = shift;
     }

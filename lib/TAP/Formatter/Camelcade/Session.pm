@@ -271,8 +271,7 @@ sub handle_yaml{
 
 sub close_test {
     my $self = shift;
-    $self->close_pending_test;
-    builder->test_suite_finished($self->name)->print;
+    $self->finish_suite;
 }
 
 #@override
@@ -282,21 +281,41 @@ sub _initialize {
     $self->{location} = delete $$arg_for{location};
 
     $self->SUPER::_initialize($arg_for);
-
-    # $arg_for has parser, name, formatter
-    builder->test_suite_started($self->name, $self->{location})->print;
     $self->{subtests} = [];
+    $self->{suits} = [];
+    # $arg_for has parser, name, formatter
+    $self->start_suite($self->name, $self->{location});
     $self->set_last_time;
     return $self;
 }
 
+sub start_suite{
+    my $self = shift;
+    my $name = shift;
+    my $location = shift;
+    my $suite = {
+        name     => $name,
+        location => $location || $name
+    };
+    push @{$self->{suites}}, $suite;
+    builder->test_suite_started(@$suite{qw/name location/})->print;
+}
+
+sub finish_suite{
+    my $self = shift;
+    $self->close_pending_test;
+
+    my $current_suite = pop @{$self->{suites}};
+    return unless $current_suite;
+    builder->test_suite_finished($current_suite->{name})->print;
+}
 
 sub start_subtest {
     my $self = shift;
     my $subtest_name = shift;
     $self->close_pending_test;
     push @{$self->{subtests}}, $subtest_name;
-    builder->test_suite_started($subtest_name)->print;
+    $self->start_suite($subtest_name);
 }
 
 sub is_subtest {
@@ -315,8 +334,7 @@ sub finish_subtest {
     my $self = shift;
     my $subtest_name = pop @{$self->{subtests}};
     return unless $subtest_name;
-    $self->close_pending_test;
-    builder->test_suite_finished($subtest_name)->print;
+    $self->finish_suite;
 }
 
 #@method
