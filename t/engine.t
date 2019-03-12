@@ -18,6 +18,9 @@ sub check_results_with_file {
 
     $result =~ s/(^\s+|\r|\s+$)//gsi;
     $result =~ s/^##teamcity/teamcity/gm;
+    if ($^O eq 'MSWin32') {
+        $result =~ s{\\}{/}gs;
+    }
     my $result_file_path = "testData/results/$test_name.txt";
     if (!$OVERWRITE_RESULTS && -f $result_file_path) {
         open my $if, $result_file_path || fail("Error creating output file: $result_file_path, $!");
