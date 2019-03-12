@@ -38,6 +38,8 @@ sub check_results_with_file {
     }
 }
 
+my $basic_command = 'prove --norc --formatter TAP::Formatter::Camelcade -m -l';
+
 subtest 'Single thread' => sub {
     my @tests = map {
         s{^testData/tests/(.+?).t$}{$1};
@@ -47,17 +49,17 @@ subtest 'Single thread' => sub {
     plan tests => scalar @tests;
 
     foreach my $test (@tests) {
-        check_results_with_file($test, scalar `prove --formatter TAP::Formatter::Camelcade -m -l testData/tests/$test.t`);
+        check_results_with_file($test, scalar `$basic_command testData/tests/$test.t`);
     }
 };
 subtest 'Two threads' => sub {
-    check_results_with_file('all_in_2threads', join '', sort `prove --formatter TAP::Formatter::Camelcade -m -l -j2 testData/tests`)
+    check_results_with_file('all_in_2threads', join '', sort `$basic_command -j2 testData/tests`)
 };
 subtest 'Three threads' => sub {
-    check_results_with_file('all_in_3threads', join '', sort `prove --formatter TAP::Formatter::Camelcade -m -l -j3 testData/tests`)
+    check_results_with_file('all_in_3threads', join '', sort `$basic_command -j3 testData/tests`)
 };
 subtest 'Four threads' => sub {
-    check_results_with_file('all_in_4threads', join '', sort `prove --formatter TAP::Formatter::Camelcade -m -l -j4 testData/tests`)
+    check_results_with_file('all_in_4threads', join '', sort `$basic_command -j4 testData/tests`)
 };
 
 done_testing();
