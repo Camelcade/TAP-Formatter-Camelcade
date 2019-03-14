@@ -10,3 +10,4 @@ run cpan CPAN
 run cpan TAP::Formatter::Camelcade
 run yum install perl-Test-Simple --assumeyes
 run cpan Test::Simple
+run cpan App::Prove::Plugin::PassEnv

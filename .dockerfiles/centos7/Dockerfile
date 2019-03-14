@@ -9,3 +9,4 @@ run yum install perl-App-cpanminus --assumeyes
 run cpanm TAP::Formatter::Camelcade --force
 run yum install perl-Test-Simple --assumeyes
 run cpanm Test::Simple
+run cpanm --force App::Prove::Plugin::PassEnv

@@ -5,3 +5,5 @@ run apt-get -y install perl-modules
 run apt-get -y install make
 run cpanm Test::Simple
 run cpanm --force TAP::Formatter::Camelcade
+run cpanm --force App::Prove::Plugin::PassEnv
+
