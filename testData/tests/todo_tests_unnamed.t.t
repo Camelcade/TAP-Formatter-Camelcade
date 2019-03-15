@@ -6,8 +6,8 @@ pass "Initial";
 
 TODO:{
     local $TODO = "Here is TODO reason";
-    fail("Failed");
-    pass("Passed");
+    fail();
+    pass();
 }
 
 pass "Last one";

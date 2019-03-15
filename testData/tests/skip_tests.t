@@ -6,8 +6,8 @@ pass "Initial";
 
 SKIP:{
     skip "Testing skip", 2;
-    fail("First fail");
-    fail("Last fail");
+    fail("Fail");
+    pass("Pass");
 }
 
 pass "Last one";

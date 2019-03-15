@@ -4,10 +4,10 @@ use Test::More;
 
 pass "Initial";
 
-TODO:{
-    local $TODO = "Here is TODO reason";
-    fail("Failed");
-    pass("Passed");
+SKIP:{
+    skip "Testing skip", 2;
+    fail("");
+    pass("");
 }
 
 pass "Last one";
