@@ -71,12 +71,12 @@ sub close_pending_test {
         if( $pending_test->{is_skip}){
             builder->test_ignored(
                 $pending_test->{name},
-                "Skipped",
+                $test_output // "",
                 $pending_test->{nodeId},
                 $pending_test->{parentNodeId},
             );
         }
-        if( length $test_output > 0 && $test_output ne "\n"){
+        elsif( length $test_output > 0 && $test_output ne "\n"){
             builder->stderr(
                 $pending_test->{name},
                 $test_output,
@@ -154,9 +154,9 @@ sub _compute_test_name {
     shift;
     #@type TAP::Parser::Result::Test
     my $result = shift;
-
     my $description = $result->description;
-    my $test_name = $description eq q{} ? $result->explanation : $description;
+    my $directive = $result->directive // "";
+    my $test_name = $description eq q{} ? join(" ", ($directive ? ($directive): ()), $result->explanation) : $description;
     $test_name =~ s/^-\s//;
     $test_name = 'Unnamed test (#' . $result->number . ')' if $test_name eq q{};
     return $test_name;
