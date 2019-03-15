@@ -67,16 +67,18 @@ sub close_pending_test {
     }
     $self->set_last_time;
     my $test_output = join "\n", @{$pending_test->{output}};
+    $test_output //= "";
+    $test_output =~ s{(\A\n+|\n+\z)}{}gs;
     if( $pending_test->{is_ok}){
         if( $pending_test->{is_skip}){
             builder->test_ignored(
                 $pending_test->{name},
-                $test_output // "",
+                $test_output,
                 $pending_test->{nodeId},
                 $pending_test->{parentNodeId},
             );
         }
-        elsif( length $test_output > 0 && $test_output ne "\n"){
+        elsif( length $test_output > 0 ){
             builder->stderr(
                 $pending_test->{name},
                 $test_output,
