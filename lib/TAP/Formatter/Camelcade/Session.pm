@@ -68,6 +68,14 @@ sub close_pending_test {
     $self->set_last_time;
     my $test_output = join "\n", @{$pending_test->{output}};
     if( $pending_test->{is_ok}){
+        if( $pending_test->{is_skip}){
+            builder->test_ignored(
+                $pending_test->{name},
+                "Skipped",
+                $pending_test->{nodeId},
+                $pending_test->{parentNodeId},
+            );
+        }
         if( length $test_output > 0 && $test_output ne "\n"){
             builder->stderr(
                 $pending_test->{name},
@@ -118,6 +126,7 @@ sub start_test {
         name         => $test_name,
         duration     => $ENV{TAP_FORMATTER_CAMELCADE_DURATION} // $test_duration,
         is_ok        => $test->is_ok,
+        is_skip      => $test->has_directive,
         output       => [],
         explanation  => $test->explanation,
         nodeId       => $self->generate_test_id($test_name),
