@@ -127,12 +127,12 @@ sub start_test {
     $self->{last_test} = {
         name         => $test_name,
         duration     => $ENV{TAP_FORMATTER_CAMELCADE_DURATION} // $test_duration,
-        is_ok        => $test->is_ok,
-        is_skip      => $test->has_directive,
+        is_ok        => scalar $test->is_ok,
+        is_skip      => scalar $test->has_directive,
         output       => [],
-        explanation  => $test->explanation,
-        nodeId       => $self->generate_test_id($test_name),
-        parentNodeId => $self->get_parent_node_id
+        explanation  => scalar $test->explanation,
+        nodeId       => scalar $self->generate_test_id($test_name),
+        parentNodeId => scalar $self->get_parent_node_id
     };
     builder->test_started(@{$self->{last_test}}{qw/name nodeId parentNodeId/});
 }
@@ -288,7 +288,7 @@ sub process_as_comment {
     $comment =~ s/^\s+//;
     # use Data::Dumper;    print STDERR "Handling: ".Dumper($result);
     $self->result(TAP::Parser::Result::Comment->new({
-        raw     => $result->raw,
+        raw     => scalar $result->raw,
         type    => 'comment',
         comment => $comment
     }));
@@ -328,8 +328,8 @@ sub start_suite {
     my $location = shift;
     my $suite = {
         name         => $name,
-        nodeId       => $self->generate_suite_id($name, $location),
-        parentNodeId => $self->get_parent_node_id(),
+        nodeId       => scalar $self->generate_suite_id($name, $location),
+        parentNodeId => scalar $self->get_parent_node_id(),
         location     => $location || $name
     };
     push @{$self->{suites}}, $suite;
