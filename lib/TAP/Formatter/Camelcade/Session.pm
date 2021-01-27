@@ -111,6 +111,8 @@ sub close_pending_test {
             details => $test_output,
             @extra
         );
+
+        $self->{failures}++;
     }
     builder->test_finished(@$pending_test{qw/name duration nodeId parentNodeId/});
 }
@@ -316,6 +318,7 @@ sub _initialize {
     $self->{subtests} = [];
     $self->{suites} = [];
     $self->{counter} = 0;
+    $self->{failures} = 0;
     # $arg_for has parser, name, formatter
     $self->start_suite($self->name, $self->{location});
     $self->set_last_time;
@@ -368,6 +371,16 @@ sub get_parent_node_id {
 sub finish_suite {
     my $self = shift;
     $self->close_pending_test;
+
+    my $parser = $self->parser;
+    if (!$self->{failures} && UNIVERSAL::isa($parser, 'TAP::Parser') && $parser->{exit}) {
+        my $test_name = 'Initialization error';
+        my $test_id = $self->generate_test_id($test_name);
+        my $parent_node_id = $self->get_parent_node_id;
+        builder->test_started($test_name, $test_id, $parent_node_id);
+        builder->test_failed($test_name, "Non-zero exit code: $parser->{exit}", $test_id, $parent_node_id);
+        builder->test_finished($test_name, 0, $test_id, $parent_node_id);
+    }
 
     my $current_suite = pop @{$self->{suites}};
     return unless $current_suite;
