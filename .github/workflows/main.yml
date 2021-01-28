@@ -1,0 +1,49 @@
+# Inspired by https://github.com/marketplace/actions/setup-perl-environment
+name: Testing
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      matrix:
+        os: [ 'ubuntu-latest', 'macos-latest' ]
+        # we are not testing with 5.10 because it exits with different exit code on failure and mess test data. We can handle that with engine, but good enough for now.
+        perl: [ '5.32.1', '5.30.3', '5.28.3', '5.26.3', '5.24.4', '5.22.4', '5.20.3', '5.18.4', '5.16.3', '5.14.4', '5.12.5' ]
+    name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache perlbrew and perl
+        uses: actions/cache@v2
+        env:
+          cache-name: cache-perlbrew
+          cache-version: 2
+        with:
+          path: |
+            ~/perl5
+            ~/.perlbrew
+          key: ${{ matrix.os }}-perl-v${{ matrix.perl }}
+      - name: Set up perlbrew
+        run: |
+          \curl -L https://install.perlbrew.pl | bash
+      - name: Set up perl ${{ matrix.perl }}
+        run: |
+          source ~/perl5/perlbrew/etc/bashrc
+          if perlbrew list | grep -q "perl-${{ matrix.perl }}"; \
+          then echo "Perl installed"; \
+          else perlbrew install --verbose perl-${{ matrix.perl }}  --notest --noman && perlbrew clean; \
+          fi
+      - name: Testing with perl-${{ matrix.perl }} on ${{ matrix.os }}
+        run: |
+          source ~/perl5/perlbrew/etc/bashrc
+          perlbrew exec -q --with perl-${{ matrix.perl }} perl -V
+          perlbrew install-cpanm
+          perlbrew exec -q --with perl-${{ matrix.perl }} cpanm install Test::More --notest
+          perlbrew exec -q --with perl-${{ matrix.perl }} prove -lv t
+
