@@ -6,6 +6,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  schedule:
+    - cron: '0 0 * * 1'
 
 jobs:
   test:
@@ -19,8 +21,10 @@ jobs:
     name: Perl ${{ matrix.perl }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
       - name: Cache perlbrew and perl
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           cache-name: cache-perlbrew
           cache-version: 2
@@ -44,6 +48,6 @@ jobs:
           source ~/perl5/perlbrew/etc/bashrc
           perlbrew exec -q --with perl-${{ matrix.perl }} perl -V
           perlbrew install-cpanm
-          perlbrew exec -q --with perl-${{ matrix.perl }} cpanm install Test::More --notest
+          perlbrew exec -q --with perl-${{ matrix.perl }} cpanm install Test::Simple Test::Harness --notest
           perlbrew exec -q --with perl-${{ matrix.perl }} prove -lv t
 
