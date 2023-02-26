@@ -21,6 +21,9 @@ sub check_results_with_file {
     if ($^O eq 'MSWin32') {
         $result =~ s{\\}{/}gs;
     }
+    if ($] >= 5.036) {
+        $result =~ s{ \(exited \d+\)}{}gs;
+    }
     my $result_file_path = "testData/results/$test_name.txt";
     if (!$OVERWRITE_RESULTS && -f $result_file_path) {
         open my $if, $result_file_path || fail("Error creating output file: $result_file_path, $!");
